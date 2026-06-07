@@ -175,6 +175,55 @@ I’ll give you only the updated portion so you can drop it in without rewriting
 
 ---
 
+## Docker Support
+
+This project includes a lightweight Docker image for running the V‑Net inference server in an isolated, reproducible environment.  
+The image uses CPU‑only TensorFlow and does **not** require CUDA or GPU drivers.
+
+### Build the image
+
+```
+docker build -t vnet-tf2 .
+```
+
+### Run the FastAPI inference server
+
+```
+docker run -p 8000:8000 vnet-tf2
+```
+
+The server will be available at:
+
+```
+http://localhost:8000
+```
+
+Interactive API docs:
+
+```
+http://localhost:8000/docs
+```
+
+### Predict from NIfTI
+
+```
+curl -X POST "http://localhost:8000/predict/nifti" \
+  -F "file=@scan.nii.gz" \
+  --output mask.nii.gz
+```
+
+### Predict from DICOM ZIP
+
+```
+curl -X POST "http://localhost:8000/predict/dicom" \
+  -F "file=@dicom_series.zip" \
+  --output mask.nii.gz
+```
+
+The container runs the same inference pipeline as the Python API and CLI.
+
+---
+
 ## Benchmarking
 
 This project includes a lightweight benchmarking tool to measure V‑Net inference performance on arbitrary 3D volumes.
