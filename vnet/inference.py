@@ -45,6 +45,8 @@ def preprocess_volume(volume: np.ndarray) -> np.ndarray:
     vmin, vmax = float(volume.min()), float(volume.max())
     if vmax > vmin:
         volume = (volume - vmin) / (vmax - vmin)
+    else:
+        volume = np.zeros_like(volume, dtype=np.float32)
 
     return volume
 
@@ -98,7 +100,8 @@ def save_nifti(mask: np.ndarray, affine: np.ndarray, out_path: str) -> None:
     """
     Save a predicted mask as NIfTI.
     """
-    nii = nib.Nifti1Image(mask.astype(np.float32), affine)
+    dtype = np.float32 if mask.dtype == np.float32 else np.uint8
+    nii = nib.Nifti1Image(mask.astype(dtype), affine)
     nib.save(nii, out_path)
 
 
@@ -115,8 +118,24 @@ def load_dicom_series(folder: str) -> np.ndarray:
 
     datasets = [pydicom.dcmread(f) for f in files]
 
-    # Sort slices by Z position
-    datasets.sort(key=lambda d: float(d.ImagePositionPatient[2]))
+    if hasattr(datasets[0], "NumberOfFrames"):
+        frames = datasets[0].pixel_array
+        return frames.astype(np.float32)
+
+    def sort_key(d) -> float | int:
+        if hasattr(d, "ImagePositionPatient"):
+            try:
+                return float(d.ImagePositionPatient[2])
+            except Exception:
+                pass
+        if hasattr(d, "InstanceNumber"):
+            try:
+                return int(d.InstanceNumber)
+            except Exception:
+                pass
+        return 0
+
+    datasets.sort(key=sort_key)
 
     slices = [d.pixel_array for d in datasets]
     volume = np.stack(slices, axis=0).astype(np.float32)

@@ -105,6 +105,16 @@ class ConvBlock2(layers.Layer):
         super().build(input_shape)
 
     def call(self, x: tf.Tensor, skip: tf.Tensor, training: bool = False) -> tf.Tensor:
+        x_shape = tf.shape(x)
+        skip_shape = tf.shape(skip)
+
+        sx = tf.minimum(x_shape[1], skip_shape[1])
+        sy = tf.minimum(x_shape[2], skip_shape[2])
+        sz = tf.minimum(x_shape[3], skip_shape[3])
+
+        x = x[:, :sx, :sy, :sz, :]
+        skip = skip[:, :sx, :sy, :sz, :]
+
         x = self.concat([x, skip])
         shortcut = self.shortcut_proj(x)
 
