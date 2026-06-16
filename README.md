@@ -133,7 +133,10 @@ POST /predict/dicom
 file=@dicom_series.zip
 ```
 
-The response is a NIfTI mask.
+The server returns HTTP 400 if:
+- the file is not a valid ZIP
+- the ZIP contains no DICOM slices
+- the DICOM files cannot be read
 
 ---
 

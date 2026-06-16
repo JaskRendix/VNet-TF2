@@ -5,7 +5,7 @@ import zipfile
 import nibabel as nib
 import numpy as np
 import pydicom
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
