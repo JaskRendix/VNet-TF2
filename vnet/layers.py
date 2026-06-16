@@ -74,23 +74,28 @@ def conv_block_2(
     name: str | None = None,
 ) -> tf.Tensor:
     """
-    Decoder-style residual block.
-    Concatenates skip connection, then applies convolutions.
-    Residual is applied only on the last convolution.
+    Decoder-style residual block with dynamic skip cropping.
     """
+    x_shape = tf.shape(x)
+    skip_shape = tf.shape(skip)
+
+    sx = tf.minimum(x_shape[1], skip_shape[1])
+    sy = tf.minimum(x_shape[2], skip_shape[2])
+    sz = tf.minimum(x_shape[3], skip_shape[3])
+
+    x = x[:, :sx, :sy, :sz, :]
+    skip = skip[:, :sx, :sy, :sz, :]
+
     x = layers.Concatenate(axis=-1, name=None if name is None else f"{name}_concat")(
         [x, skip]
     )
 
-    shortcut = x
-
-    # Project shortcut to match conv output channels
     shortcut = layers.Conv3D(
         filters,
         kernel_size=1,
         padding="same",
         name=None if name is None else f"{name}_shortcut_proj",
-    )(shortcut)
+    )(x)
 
     for i in range(num_convs):
         x = layers.Conv3D(
