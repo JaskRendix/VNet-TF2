@@ -5,7 +5,7 @@ import zipfile
 import nibabel as nib
 import numpy as np
 import pydicom
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -29,13 +29,21 @@ class PredictResponse(BaseModel):
 def load_dicom_zip(file: UploadFile) -> np.ndarray:
     """Extract a ZIP of DICOM slices into a 3D numpy volume."""
     data = file.file.read()
-    z = zipfile.ZipFile(io.BytesIO(data))
+
+    # validate ZIP
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile:
+        raise ValueError("Invalid ZIP file")
 
     slices = []
     for name in sorted(z.namelist()):
         if name.lower().endswith(".dcm"):
             ds = pydicom.dcmread(io.BytesIO(z.read(name)))
             slices.append(ds.pixel_array)
+
+    if not slices:
+        raise ValueError("No DICOM slices found in ZIP")
 
     volume = np.stack(slices, axis=0).astype(np.float32)
     return volume
@@ -55,8 +63,6 @@ def nifti_to_bytes(mask: np.ndarray, affine: np.ndarray) -> io.BytesIO:
 
 @app.post("/predict/nifti", response_model=PredictResponse)
 async def predict_nifti_endpoint(file: UploadFile = File(...)) -> StreamingResponse:
-    """Upload a NIfTI file → return segmentation mask as NIfTI."""
-    # Save uploaded bytes to a real temporary file for nibabel
     with tempfile.NamedTemporaryFile(suffix=".nii.gz") as tmp:
         tmp.write(await file.read())
         tmp.flush()
@@ -74,10 +80,12 @@ async def predict_nifti_endpoint(file: UploadFile = File(...)) -> StreamingRespo
 
 @app.post("/predict/dicom", response_model=PredictResponse)
 async def predict_dicom_endpoint(file: UploadFile = File(...)) -> StreamingResponse:
-    """Upload a ZIP of DICOM slices → return segmentation mask as NIfTI."""
-    volume = load_dicom_zip(file)
-    mask = predict(MODEL, volume)
+    try:
+        volume = load_dicom_zip(file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
+    mask = predict(MODEL, volume)
     affine = np.eye(4)
     out_bytes = nifti_to_bytes(mask, affine)
 
