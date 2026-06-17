@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from vnet.model import build_vnet
 
@@ -176,3 +177,24 @@ def test_vnet_odd_channel_count():
     y = model(x)
 
     assert y.shape == (1, 32, 32, 32, 1)
+
+
+def test_vnet_prelu_forward():
+    model = build_vnet(
+        input_shape=(32, 32, 32, 1),
+        num_classes=1,
+        activation="prelu",
+    )
+    x = np.random.rand(1, 32, 32, 32, 1).astype("float32")
+    y = model(x)
+    assert y.shape == (1, 32, 32, 32, 1)
+
+
+def test_vnet_backward_pass():
+    model = build_vnet(input_shape=(16, 16, 16, 1))
+    x = tf.random.uniform((1, 16, 16, 16, 1))
+    with tf.GradientTape() as tape:
+        y = model(x)
+        loss = tf.reduce_mean(y)
+    grads = tape.gradient(loss, model.trainable_variables)
+    assert any(g is not None for g in grads)

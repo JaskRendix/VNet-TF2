@@ -12,7 +12,7 @@ from vnet.inference import load_vnet, predict
 def generate_volume(shape: tuple[int, int, int]) -> np.ndarray:
     """Generate a random 3D volume for benchmarking."""
     d, h, w = shape
-    return np.random.rand(d, h, w).astype(np.float32)
+    return np.random.rand(d, h, w, 1).astype(np.float32)
 
 
 def benchmark(
@@ -82,6 +82,8 @@ def main() -> None:
         input_shape=(None, None, None, 1),
         num_classes=1,
     )
+
+    print("Device:", tf.config.list_physical_devices("GPU"))
 
     volume = generate_volume(tuple(args.shape))
     benchmark(model, volume, warmup=args.warmup, runs=args.runs)
