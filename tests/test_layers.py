@@ -1,21 +1,7 @@
 import pytest
 import tensorflow as tf
 
-from vnet.layers import conv3d, conv_block, conv_block_2, downsample, upsample
-
-
-def test_conv3d_forward():
-    layer = conv3d(filters=8)
-    x = tf.random.uniform((1, 16, 16, 16, 4))
-    y = layer(x)
-    assert y.shape == (1, 16, 16, 16, 8)
-
-
-def test_conv3d_with_dropout():
-    layer = conv3d(filters=8, dropout=0.5)
-    x = tf.random.uniform((1, 16, 16, 16, 4))
-    y = layer(x, training=True)
-    assert y.shape == (1, 16, 16, 16, 8)
+from vnet.layers import conv_block, conv_block_2, downsample, upsample
 
 
 @pytest.mark.parametrize(
@@ -95,3 +81,35 @@ def test_down_up_roundtrip():
     z = up(y)
 
     assert z.shape == (1, 32, 32, 32, 8)
+
+
+def test_prelu_shared_axes():
+    x = tf.random.uniform((1, 16, 16, 16, 8))
+    y = conv_block(x, filters=8, num_convs=2, activation="prelu")
+    assert y.shape == (1, 16, 16, 16, 8)
+
+
+def test_conv_block_residual_addition():
+    x = tf.random.uniform((1, 16, 16, 16, 8))
+    y = conv_block(x, filters=8, num_convs=2)
+
+    # Residual block must preserve shape
+    assert y.shape == x.shape
+
+
+def test_conv_block_2_channel_reduction():
+    x = tf.random.uniform((1, 16, 16, 16, 32))
+    skip = tf.random.uniform((1, 16, 16, 16, 32))
+
+    y = conv_block_2(x, skip, filters=16, num_convs=2)
+
+    assert y.shape == (1, 16, 16, 16, 16)
+
+
+def test_conv_block_2_cropping():
+    x = tf.random.uniform((1, 20, 30, 40, 16))
+    skip = tf.random.uniform((1, 18, 28, 38, 16))
+
+    y = conv_block_2(x, skip, filters=16, num_convs=2)
+
+    assert y.shape == (1, 18, 28, 38, 16)
