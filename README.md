@@ -1,12 +1,10 @@
-## VNet‑TF2‑Inference
+# VNet‑TF2‑Inference
 
 TensorFlow 2 / Keras re‑implementation of the V‑Net architecture for 3D medical image segmentation.  
-This project provides an inference‑focused rewrite of the original TensorFlow 1.x code by Miguel Monteiro:
+Based on the original TensorFlow 1.x code by Miguel Monteiro:  
+[https://github.com/MiguelMonteiro/VNet-Tensorflow](https://github.com/MiguelMonteiro/VNet-Tensorflow)
 
-Original repository:  
-`https://github.com/MiguelMonteiro/VNet-Tensorflow`
-
-This version includes:
+This version provides:
 
 - a TF2/Keras V‑Net model  
 - dynamic‑shape inference  
@@ -29,7 +27,7 @@ This implementation:
 - supports `input_shape=(None, None, None, C)`  
 - exports as a standard Keras model  
 
-The original diagram is included as `VNetDiagram.png`.
+The diagram is included as `VNetDiagram.png`.
 
 ---
 
@@ -47,7 +45,7 @@ Optional test dependencies:
 pip install -e .[test]
 ```
 
-Python 3.10+ is required.
+Python 3.10+ required.
 
 ---
 
@@ -65,20 +63,20 @@ model = load_vnet(
 mask, affine = predict_nifti(model, "scan.nii.gz")
 ```
 
-`mask` has the same spatial shape as the input volume.
+The output mask matches the input spatial shape.
 
 ---
 
 ## Command‑Line Interface
 
-The CLI is installed as `vnet-infer`.
+Installed as `vnet-infer`.
 
 ### Global options
 
 ```
 --weights PATH        Path to model weights (.h5 or checkpoint)
 --classes N           Number of output classes (default: 1)
---no-activation       Return raw logits instead of activated output
+--no-activation       Return raw logits
 ```
 
 ### NIfTI
@@ -88,12 +86,6 @@ vnet-infer [--weights W] [--classes N] [--no-activation] \
     nifti input.nii.gz output.nii.gz
 ```
 
-Example:
-
-```
-vnet-infer --weights weights.h5 nifti scan.nii.gz mask.nii.gz
-```
-
 ### DICOM folder
 
 ```
@@ -101,42 +93,24 @@ vnet-infer [--weights W] [--classes N] [--no-activation] \
     dicom ./dicom_series/ output.nii.gz
 ```
 
-Example:
-
-```
-vnet-infer --classes 3 dicom ./dicom_series/ mask.nii.gz
-```
-
-The output is a NIfTI mask.
+Output is a NIfTI mask.
 
 ---
 
 ## FastAPI Server
 
-Start the server:
+Start:
 
 ```
 uvicorn api.server:app --reload
 ```
 
-### Predict from NIfTI
+### Endpoints
 
-```
-POST /predict/nifti
-file=@scan.nii.gz
-```
+- `POST /predict/nifti` — NIfTI file  
+- `POST /predict/dicom` — ZIP containing a DICOM series  
 
-### Predict from DICOM ZIP
-
-```
-POST /predict/dicom
-file=@dicom_series.zip
-```
-
-The server returns HTTP 400 if:
-- the file is not a valid ZIP
-- the ZIP contains no DICOM slices
-- the DICOM files cannot be read
+Returns HTTP 400 for invalid ZIPs or unreadable DICOM data.
 
 ---
 
@@ -167,12 +141,12 @@ Parameters:
 
 ---
 
-## Inference Details
+## Inference Utilities
 
 The inference module provides:
 
 - NIfTI I/O  
-- DICOM series loading  
+- DICOM loading  
 - normalization  
 - channel handling  
 - sigmoid or softmax output  
@@ -187,7 +161,7 @@ Supports arbitrary spatial dimensions.
 
 ---
 
-## Docker Support
+## Docker
 
 Build:
 
@@ -203,16 +177,12 @@ docker run -p 8000:8000 vnet-tf2
 
 Server:
 
-```
-http://localhost:8000
-http://localhost:8000/docs
-```
+- http://localhost:8000  
+- http://localhost:8000/docs  
 
 ---
 
 ## Benchmarking
-
-Run:
 
 ```
 python bench/benchmark_vnet.py --shape 64 64 64 --runs 20
@@ -236,12 +206,6 @@ P90 latency:    13.10 ms
 P99 latency:    14.02 ms
 Throughput:     81.0 volumes/sec
 ```
-
----
-
-## Original Repository
-
-`https://github.com/MiguelMonteiro/VNet-Tensorflow`
 
 ---
 
