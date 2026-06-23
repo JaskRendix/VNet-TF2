@@ -39,4 +39,4 @@ requires = ["setuptools>=65", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-report=term-missing"
+addopts = "--cov=vnet --cov-report=term-missing"
